@@ -1,0 +1,110 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Быстрая оплата в 1 клик | NFC Таджикистан</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="payment-container" id="paymentView">
+    <div class="badge-nfc">
+      <span>📡</span> NFC Бесконтактная оплата
+    </div>
+
+    <div class="merchant-title" id="merchantName">Магазин "Фурӯшгоҳ"</div>
+    <div class="order-number" id="orderNumber">Заказ #ORD-123456</div>
+
+    <div class="amount-box">
+      <div class="amount-label">Сумма к оплате</div>
+      <div class="amount-value" id="amountValue">50.00 TJS</div>
+    </div>
+
+    <div class="section-label">
+      <span>🏦</span> Выберите ваше банковское приложение:
+    </div>
+
+    <div class="banks-list">
+      <!-- 1. Alif Mobi -->
+      <div class="bank-item" onclick="payWithBank('alif')">
+        <div class="bank-info-left">
+          <div class="bank-icon alif">A</div>
+          <div>
+            <div class="bank-name">Alif Mobi</div>
+            <div class="bank-desc">Оплата в 1 касание (Алиф)</div>
+          </div>
+        </div>
+        <div class="bank-arrow">➔</div>
+      </div>
+
+      <!-- 2. DC Next (Dushanbe City) -->
+      <div class="bank-item" onclick="payWithBank('dc')">
+        <div class="bank-info-left">
+          <div class="bank-icon dc">DC</div>
+          <div>
+            <div class="bank-name">DC Next</div>
+            <div class="bank-desc">Dushanbe City кошелек и карта</div>
+          </div>
+        </div>
+        <div class="bank-arrow">➔</div>
+      </div>
+
+      <!-- 3. Eskhata Online -->
+      <div class="bank-item" onclick="payWithBank('eskhata')">
+        <div class="bank-info-left">
+          <div class="bank-icon eskhata">Э</div>
+          <div>
+            <div class="bank-name">Эсхата Онлайн</div>
+            <div class="bank-desc">Банк Эсхата мобильный банкинг</div>
+          </div>
+        </div>
+        <div class="bank-arrow">➔</div>
+      </div>
+
+      <!-- 4. Korti Milli QR -->
+      <div class="bank-item" onclick="payWithBank('km')">
+        <div class="bank-info-left">
+          <div class="bank-icon km">KM</div>
+          <div>
+            <div class="bank-name">Корти Милли / Единый QR</div>
+            <div class="bank-desc">Любой банк РТ по стандарту НБТ</div>
+          </div>
+        </div>
+        <div class="bank-arrow">➔</div>
+      </div>
+    </div>
+
+    <!-- Интерактивный тест для мгновенной проверки без реальной карты -->
+    <div class="test-section">
+      <button type="button" class="btn-simulate" onclick="simulatePaymentSuccess()">
+        <span>⚡</span> Тест: Симулировать успешную оплату
+      </button>
+      <div style="font-size: 0.72rem; color: #64748b; margin-top: 8px;">
+        (Нажмите для проверки моментальной передачи статуса на терминал продавца)
+      </div>
+    </div>
+  </div>
+
+  <!-- Экран Успеха -->
+  <div class="payment-container success-card" id="successView">
+    <div class="success-icon-wrap">✓</div>
+    <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 6px; color: #22c55e;">Оплата прошла успешно!</h2>
+    <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 16px;">
+      Деньги списаны. Терминал продавца уже зафиксировал платеж.
+    </p>
+
+    <div class="amount-box" style="border-color: rgba(34, 197, 94, 0.4);">
+      <div class="amount-label">Оплачено</div>
+      <div class="amount-value" id="successAmount" style="background: none; -webkit-text-fill-color: #4ade80; color: #4ade80;">50.00 TJS</div>
+      <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 6px;" id="successBankUsed">через Alif Mobi</div>
+    </div>
+
+    <div style="font-size: 0.8rem; color: #64748b;">
+      Спасибо за покупку! Чек сохранен в вашем банковском приложении.
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
