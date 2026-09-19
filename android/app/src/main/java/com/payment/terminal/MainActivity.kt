@@ -324,7 +324,7 @@ fun WaitingNfcScreen(
                 modifier = Modifier
                     .size(90.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFF00D2FF).copy(alpha = 0.15)),
+                    .background(Color(0xFF00D2FF).copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
