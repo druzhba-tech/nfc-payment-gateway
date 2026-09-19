@@ -1,0 +1,13 @@
+﻿{
+  "name": "customer-payment-web",
+  "version": "1.0.0",
+  "description": "NFC Payment Web Gateway for Tajikistan Banking Apps",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.17.0"
+  }
+}
