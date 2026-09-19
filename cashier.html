@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Касса Продавца | NFC Терминал РТ</title>
   <link rel="stylesheet" href="styles.css">
-  <!-- Генератор QR-кодов без внешних серверов -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <style>
     .pos-keypad {
       display: grid;
@@ -43,18 +41,37 @@
       border: none;
       cursor: pointer;
       box-shadow: 0 8px 24px rgba(0, 210, 255, 0.35);
+      transition: transform 0.1s;
+    }
+    .btn-charge:active {
+      transform: scale(0.98);
     }
     .qr-frame {
       background: #ffffff;
       padding: 16px;
-      border-radius: 16px;
+      border-radius: 18px;
       display: inline-block;
       margin: 16px auto;
       box-shadow: 0 10px 25px rgba(0,0,0,0.5);
     }
-    #qrcode canvas {
+    .qr-img {
+      width: 220px;
+      height: 220px;
       display: block;
-      border-radius: 6px;
+      border-radius: 8px;
+    }
+    .btn-open-link {
+      display: block;
+      margin-top: 12px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      color: #38bdf8;
+      font-size: 0.85rem;
+      text-decoration: none;
+      font-weight: 600;
+      word-break: break-all;
     }
   </style>
 </head>
@@ -66,8 +83,8 @@
       <span>🏪</span> Касса Продавца
     </div>
 
-    <div class="merchant-title">Терминал: +992 92 882 6696</div>
-    <div style="font-size: 0.8rem; color: #64748b; margin-bottom: 12px;">Введите сумму для получения:</div>
+    <div class="merchant-title">Получатель: +992 92 882 6696</div>
+    <div style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 12px;">Введите сумму покупки:</div>
 
     <div class="amount-box">
       <div class="amount-label">К получению</div>
@@ -75,21 +92,21 @@
     </div>
 
     <div class="pos-keypad">
-      <button class="pos-key" onclick="pressDigit('1')">1</button>
-      <button class="pos-key" onclick="pressDigit('2')">2</button>
-      <button class="pos-key" onclick="pressDigit('3')">3</button>
-      <button class="pos-key" onclick="pressDigit('4')">4</button>
-      <button class="pos-key" onclick="pressDigit('5')">5</button>
-      <button class="pos-key" onclick="pressDigit('6')">6</button>
-      <button class="pos-key" onclick="pressDigit('7')">7</button>
-      <button class="pos-key" onclick="pressDigit('8')">8</button>
-      <button class="pos-key" onclick="pressDigit('9')">9</button>
-      <button class="pos-key clear" onclick="clearInput()">C</button>
-      <button class="pos-key" onclick="pressDigit('0')">0</button>
-      <button class="pos-key del" onclick="backspace()">⌫</button>
+      <button type="button" class="pos-key" onclick="pressDigit('1')">1</button>
+      <button type="button" class="pos-key" onclick="pressDigit('2')">2</button>
+      <button type="button" class="pos-key" onclick="pressDigit('3')">3</button>
+      <button type="button" class="pos-key" onclick="pressDigit('4')">4</button>
+      <button type="button" class="pos-key" onclick="pressDigit('5')">5</button>
+      <button type="button" class="pos-key" onclick="pressDigit('6')">6</button>
+      <button type="button" class="pos-key" onclick="pressDigit('7')">7</button>
+      <button type="button" class="pos-key" onclick="pressDigit('8')">8</button>
+      <button type="button" class="pos-key" onclick="pressDigit('9')">9</button>
+      <button type="button" class="pos-key clear" onclick="clearInput()">C</button>
+      <button type="button" class="pos-key" onclick="pressDigit('0')">0</button>
+      <button type="button" class="pos-key del" onclick="backspace()">⌫</button>
     </div>
 
-    <button class="btn-charge" id="btnCharge" onclick="chargeOrder()">
+    <button type="button" class="btn-charge" id="btnCharge" onclick="chargeOrder()">
       ВЫСТАВИТЬ СЧЕТ (NFC / QR)
     </button>
   </div>
@@ -100,20 +117,26 @@
       <span>📡</span> Приложите телефон или отсканируйте
     </div>
 
-    <div class="amount-value" id="waitingAmount" style="margin: 8px 0;">50.00 TJS</div>
+    <div class="amount-value" id="waitingAmount" style="margin: 8px 0; font-size: 2.5rem;">50.00 TJS</div>
     <div style="font-size: 0.85rem; color: #94a3b8;" id="waitingOrderText">Заказ #ORD-123456</div>
 
     <div class="qr-frame">
-      <div id="qrcode"></div>
+      <img id="qrImage" class="qr-img" src="" alt="QR-код оплаты">
     </div>
 
-    <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 16px;">
-      Покупатель прикладывает свой телефон к вашему или сканирует этот QR-код.
+    <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 8px;">
+      Покупатель наводит камеру смартфона или касается вашей NFC-метки.
     </p>
 
-    <button type="button" class="btn-simulate" onclick="cancelCharge()" style="background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #f87171;">
-      ✕ Отменить / Новый чек
-    </button>
+    <a id="payDirectLink" href="#" target="_blank" class="btn-open-link">
+      🔗 Открыть страницу оплаты вручную
+    </a>
+
+    <div style="margin-top: 16px;">
+      <button type="button" class="btn-simulate" onclick="cancelCharge()" style="background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #f87171;">
+        ✕ Отменить / Новый чек
+      </button>
+    </div>
   </div>
 
   <script>
@@ -143,24 +166,34 @@
 
     function chargeOrder() {
       const num = parseFloat(currentInput);
-      if (!num || num <= 0) return alert("Введите сумму больше 0");
+      if (!num || num <= 0) {
+        alert("Пожалуйста, сначала введите сумму на клавиатуре (например: 10)");
+        return;
+      }
 
       const orderId = "ORD-" + Math.floor(100000 + Math.random() * 900000);
       
-      // Формируем ссылку на страницу оплаты покупателя
-      const baseUrl = window.location.href.replace('cashier.html', 'index.html').split('#')[0].split('?')[0];
-      const customerPayUrl = `${baseUrl}?order=${orderId}&amount=${num}&merchant=${encodeURIComponent('Терминал (+992 92 882 6696)')}`;
+      // Формируем чистую ссылку на index.html
+      const currentUrl = window.location.href.split('?')[0].split('#')[0];
+      const baseUrl = currentUrl.endsWith('cashier.html')
+        ? currentUrl.replace('cashier.html', 'index.html')
+        : currentUrl.replace(/\/$/, '') + '/index.html';
+
+      const customerPayUrl = `${baseUrl}?order=${orderId}&amount=${num}`;
 
       document.getElementById('waitingAmount').textContent = num.toFixed(2) + " TJS";
       document.getElementById('waitingOrderText').textContent = "Заказ #" + orderId;
 
-      // Генерируем QR
-      const qrContainer = document.getElementById('qrcode');
-      qrContainer.innerHTML = "";
-      QRCode.toCanvas(customerPayUrl, { width: 200, margin: 1 }, function (error, canvas) {
-        if (!error) qrContainer.appendChild(canvas);
-      });
+      // 100% надежный QR-код без сторонних JS скриптов
+      const qrApiUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&margin=2&data=" + encodeURIComponent(customerPayUrl);
+      document.getElementById('qrImage').src = qrApiUrl;
 
+      // Прямая ссылка
+      const linkEl = document.getElementById('payDirectLink');
+      linkEl.href = customerPayUrl;
+      linkEl.textContent = "🔗 Перейти к оплате: " + num + " TJS";
+
+      // Переключаем экраны
       document.getElementById('keypadView').style.display = "none";
       document.getElementById('waitingView').style.display = "block";
     }
