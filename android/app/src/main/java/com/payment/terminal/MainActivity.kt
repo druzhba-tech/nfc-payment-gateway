@@ -1,6 +1,10 @@
 ﻿package com.payment.terminal
 
+import android.content.ComponentName
+import android.nfc.NfcAdapter
+import android.nfc.cardemulation.CardEmulation
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.*
@@ -16,7 +20,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -42,8 +45,20 @@ class MainActivity : ComponentActivity() {
         .readTimeout(10, TimeUnit.SECONDS)
         .build()
 
+    private var nfcAdapter: NfcAdapter? = null
+    private var cardEmulation: CardEmulation? = null
+    private var hceComponentName: ComponentName? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Инициализация NFC HCE для устранения конфликтов
+        nfcAdapter = NfcAdapter.getDefaultAdapter(this)
+        if (nfcAdapter != null) {
+            cardEmulation = CardEmulation.getInstance(nfcAdapter)
+            hceComponentName = ComponentName(this, NfcPaymentHceService::class.java)
+        }
+
         setContent {
             MaterialTheme(
                 colorScheme = darkColorScheme(
@@ -58,6 +73,34 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onResume() {
+        super.onResume()
+        // Устанавливаем приоритет нашего HCE сервиса перед системными тегами
+        try {
+            val adapter = nfcAdapter
+            val comp = hceComponentName
+            if (adapter != null && adapter.isEnabled && comp != null) {
+                cardEmulation?.setPreferredService(this, comp)
+                Log.d("MainActivity", "NFC preferred service successfully activated")
+            }
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Could not set preferred service", e)
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Освобождаем приоритет при сворачивании приложения
+        try {
+            val adapter = nfcAdapter
+            if (adapter != null && adapter.isEnabled) {
+                cardEmulation?.unsetPreferredService(this)
+            }
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Could not unset preferred service", e)
+        }
+    }
 }
 
 @Composable
@@ -65,7 +108,7 @@ fun TerminalApp(client: OkHttpClient) {
     var screenState by remember { mutableStateOf(ScreenState.INPUT_AMOUNT) }
     var amountInput by remember { mutableStateOf("50") }
     var orderId by remember { mutableStateOf("ORD-1001") }
-    var serverHost by remember { mutableStateOf("192.168.1.100:3000") }
+    var serverHost by remember { mutableStateOf("druzhba-tech.github.io/nfc-payment-gateway") }
     var paidBank by remember { mutableStateOf("Alif Mobi") }
     val scope = rememberCoroutineScope()
 
@@ -94,43 +137,17 @@ fun TerminalApp(client: OkHttpClient) {
                     onConfirm = {
                         val num = amountInput.toDoubleOrNull() ?: 10.0
                         orderId = "ORD-" + (100000..999999).random()
-                        val url = "http://$serverHost/?order=$orderId&amount=$num"
+                        
+                        // Ссылка на рабочий GitHub Pages шлюз с параметрами
+                        val url = if (serverHost.startsWith("http")) {
+                            "$serverHost/?order=$orderId&amount=$num"
+                        } else {
+                            "https://$serverHost/?order=$orderId&amount=$num"
+                        }
                         
                         // Активируем платежную ссылку в NFC HCE сервисе
                         NfcPaymentHceService.activePaymentUrl = url
                         screenState = ScreenState.WAITING_NFC
-
-                        // Запускаем опрос статуса оплаты с сервера
-                        scope.launch(Dispatchers.IO) {
-                            var paid = false
-                            for (i in 1..60) { // ждем 60 секунд
-                                delay(1000)
-                                if (screenState != ScreenState.WAITING_NFC) break
-                                try {
-                                    val req = Request.Builder()
-                                        .url("http://$serverHost/api/orders/$orderId")
-                                        .build()
-                                    val resp = client.newCall(req).execute()
-                                    if (resp.isSuccessful) {
-                                        val body = resp.body?.string() ?: ""
-                                        val json = JSONObject(body)
-                                        if (json.optBoolean("success")) {
-                                            val ord = json.getJSONObject("order")
-                                            if (ord.optString("status") == "PAID") {
-                                                paidBank = ord.optString("paymentMethod", "Alif Mobi")
-                                                paid = true
-                                                withContext(Dispatchers.Main) {
-                                                    screenState = ScreenState.SUCCESS
-                                                }
-                                                break
-                                            }
-                                        }
-                                    }
-                                } catch (e: Exception) {
-                                    // Оффлайн или сервер еще не ответил
-                                }
-                            }
-                        }
                     }
                 )
             }
@@ -189,10 +206,10 @@ fun InputAmountScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "NFC ТЕРМИНАЛ РТ",
+                text = "NFC ТЕРМИНАЛ РТ (+992 92 882 6696)",
                 color = Color(0xFF00D2FF),
                 fontWeight = FontWeight.Bold,
-                fontSize = 14.sp
+                fontSize = 13.sp
             )
             IconButton(onClick = { showSettings = !showSettings }) {
                 Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color(0xFF94A3B8))
@@ -203,7 +220,7 @@ fun InputAmountScreen(
             OutlinedTextField(
                 value = serverHost,
                 onValueChange = onServerHostChange,
-                label = { Text("IP адрес веб-сервера (компьютера)", color = Color(0xFF94A3B8)) },
+                label = { Text("Адрес шлюза оплаты", color = Color(0xFF94A3B8)) },
                 modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
             )
         }
